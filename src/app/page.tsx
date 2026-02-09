@@ -1,216 +1,60 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
-interface Commit {
-  sha: string;
-  message: string;
-  author: string;
-  date: string;
-}
-
-interface CIStatus {
-  status: 'success' | 'failure' | 'pending' | 'unknown';
-  conclusion: string;
-  name: string;
-}
-
-interface DashboardData {
-  commit: Commit | null;
-  ci: CIStatus | null;
-  loading: boolean;
-  error: string | null;
-  lastUpdated: Date | null;
-}
-
-const REPO = 'danisdope/aetherion-edu-os';
-const REFRESH_INTERVAL = 30000; // 30 seconds
+import { GitStatus } from '@/components/GitStatus';
+import { AgentCards } from '@/components/AgentCards';
+import { TaskQueue } from '@/components/TaskQueue';
+import { ActivityFeed } from '@/components/ActivityFeed';
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData>({
-    commit: null,
-    ci: null,
-    loading: true,
-    error: null,
-    lastUpdated: null,
-  });
-
-  const fetchData = async () => {
-    try {
-      // Fetch latest commit
-      const commitRes = await fetch(
-        `https://api.github.com/repos/${REPO}/commits?per_page=1`
-      );
-      const commits = await commitRes.json();
-      
-      // Fetch CI status
-      const runsRes = await fetch(
-        `https://api.github.com/repos/${REPO}/actions/runs?per_page=1`
-      );
-      const runs = await runsRes.json();
-
-      const latestCommit = commits[0];
-      const latestRun = runs.workflow_runs?.[0];
-
-      setData({
-        commit: latestCommit ? {
-          sha: latestCommit.sha.substring(0, 7),
-          message: latestCommit.commit.message.split('\n')[0],
-          author: latestCommit.commit.author.name,
-          date: new Date(latestCommit.commit.author.date).toLocaleString(),
-        } : null,
-        ci: latestRun ? {
-          status: latestRun.status,
-          conclusion: latestRun.conclusion || 'pending',
-          name: latestRun.name,
-        } : null,
-        loading: false,
-        error: null,
-        lastUpdated: new Date(),
-      });
-    } catch (err) {
-      setData(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Failed to fetch data',
-      }));
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getCIColor = (conclusion: string) => {
-    switch (conclusion) {
-      case 'success': return 'bg-green-500';
-      case 'failure': return 'bg-red-500';
-      case 'pending': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getCIEmoji = (conclusion: string) => {
-    switch (conclusion) {
-      case 'success': return '✅';
-      case 'failure': return '❌';
-      case 'pending': return '⏳';
-      default: return '❓';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Header */}
+      <header className="border-b border-gray-800 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">🦉</span>
+            <span className="text-3xl">🦉</span>
             <div>
-              <h1 className="text-2xl font-bold">Aether Dashboard</h1>
-              <p className="text-gray-400 text-sm">aetherion.digital</p>
+              <h1 className="text-xl font-bold">Aether Dashboard</h1>
+              <p className="text-xs text-gray-500">aetherion.digital</p>
             </div>
           </div>
-          <div className="text-right text-sm text-gray-500">
-            {data.lastUpdated && (
-              <p>Updated: {data.lastUpdated.toLocaleTimeString()}</p>
-            )}
-            <p>Refreshes every 30s</p>
-          </div>
-        </div>
-
-        {/* Main Status Banner */}
-        <div className={`rounded-lg p-6 mb-6 ${data.ci ? getCIColor(data.ci.conclusion) : 'bg-gray-800'} bg-opacity-20 border border-opacity-50 ${data.ci ? getCIColor(data.ci.conclusion).replace('bg-', 'border-') : 'border-gray-700'}`}>
-          {data.loading ? (
-            <div className="animate-pulse">Loading...</div>
-          ) : data.error ? (
-            <div className="text-red-400">{data.error}</div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">{data.ci ? getCIEmoji(data.ci.conclusion) : '❓'}</span>
-                  <span className="font-mono text-lg font-bold">
-                    {data.commit?.sha || 'Unknown'}
-                  </span>
-                </div>
-                <p className="text-lg">{data.commit?.message || 'No commit message'}</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  by {data.commit?.author || 'Unknown'} • {data.commit?.date || 'Unknown date'}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getCIColor(data.ci?.conclusion || 'unknown')}`}>
-                  {data.ci?.conclusion?.toUpperCase() || 'UNKNOWN'}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Links */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <a
-            href={`https://github.com/${REPO}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📦</span>
-              <div>
-                <p className="font-medium">Repository</p>
-                <p className="text-sm text-gray-400">{REPO}</p>
-              </div>
-            </div>
-          </a>
-          <a
-            href={`https://github.com/${REPO}/actions`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⚙️</span>
-              <div>
-                <p className="font-medium">CI Pipeline</p>
-                <p className="text-sm text-gray-400">View all runs</p>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        {/* Agent Status Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">🦉</span>
-              <span className="font-medium">Aether</span>
-            </div>
-            <div className="text-sm">
-              <p className="text-green-400">● Online</p>
-              <p className="text-gray-400 mt-1">Coordinator</p>
-            </div>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">🔪</span>
-              <span className="font-medium">Surgeon</span>
-            </div>
-            <div className="text-sm">
-              <p className="text-yellow-400">● Manual trigger</p>
-              <p className="text-gray-400 mt-1">Reviewer + Executor</p>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/danisdope/aetherion-edu-os"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+            </a>
+            <div className="text-xs text-gray-500">
+              Refreshes live
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Footer */}
-        <div className="text-center text-gray-500 text-sm">
-          <p>Aetherion Digital Systems</p>
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Git Status Banner */}
+        <GitStatus />
+
+        {/* Agent Cards */}
+        <AgentCards />
+
+        {/* Task Queue */}
+        <TaskQueue />
+
+        {/* Activity Feed */}
+        <ActivityFeed />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 px-6 py-4 mt-12">
+        <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
+          Aetherion Digital Systems • Built by Aether 🦉
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
