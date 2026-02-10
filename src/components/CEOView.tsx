@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { ExpandableCard } from './ExpandableCard';
+import { VisionGoals } from './VisionGoals';
+import { QuickNotes } from './QuickNotes';
 
 interface TodoItem {
   id: string;
@@ -254,6 +256,12 @@ export function CEOView() {
         }
         defaultExpanded={true}
       />
+
+      {/* Vision & Goals */}
+      <VisionGoals />
+
+      {/* Quick Notes */}
+      <QuickNotes />
     </div>
   );
 }
