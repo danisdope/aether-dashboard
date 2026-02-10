@@ -12,6 +12,7 @@ import { KanbanBoard } from '@/components/KanbanBoard';
 import { RoadmapView } from '@/components/RoadmapView';
 import { GitStatus } from '@/components/GitStatus';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
 
 type Tab = 'today' | 'week' | 'tests' | 'kanban' | 'roadmap' | 'activity';
 
@@ -150,6 +151,9 @@ export default function Dashboard() {
           </span>
         </div>
       </footer>
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts onNavigate={(tab) => setActiveTab(tab as Tab)} />
     </div>
   );
 }
