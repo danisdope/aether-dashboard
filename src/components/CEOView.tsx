@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExpandableCard } from './ExpandableCard';
 import { VisionGoals } from './VisionGoals';
 import { QuickNotes } from './QuickNotes';
@@ -23,11 +23,26 @@ interface Workstream {
 }
 
 export function CEOView() {
-  const [todos, setTodos] = useState<TodoItem[]>([
+  const defaultTodos: TodoItem[] = [
     { id: '1', text: 'Run test scenarios 2-12', done: false, details: 'Happy paths + Personas + Resistance. ~30-40 min total.' },
     { id: '2', text: 'Send each transcript to Aether', done: false, details: 'Copy-paste full transcript after each test for logging.' },
     { id: '3', text: 'Review Surgeon fixes as they come in', done: false, details: 'Approve PRs for any bugs found during testing.' },
-  ]);
+  ];
+
+  const [todos, setTodos] = useState<TodoItem[]>(defaultTodos);
+
+  // Load todos from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('aether-todos-2026-02-11');
+    if (saved) {
+      setTodos(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save todos to localStorage
+  useEffect(() => {
+    localStorage.setItem('aether-todos-2026-02-11', JSON.stringify(todos));
+  }, [todos]);
 
   const workstreams: Workstream[] = [
     { 
@@ -70,10 +85,29 @@ export function CEOView() {
     needsInput: [],
   };
 
+  const [newTask, setNewTask] = useState('');
+  const [showAddTask, setShowAddTask] = useState(false);
+
   const toggleTodo = (id: string) => {
     setTodos(prev => prev.map(t => 
       t.id === id ? { ...t, done: !t.done } : t
     ));
+  };
+
+  const addTask = () => {
+    if (!newTask.trim()) return;
+    const task: TodoItem = {
+      id: Date.now().toString(),
+      text: newTask.trim(),
+      done: false,
+    };
+    setTodos(prev => [...prev, task]);
+    setNewTask('');
+    setShowAddTask(false);
+  };
+
+  const deleteTask = (id: string) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
   };
 
   const completedCount = todos.filter(t => t.done).length;
@@ -103,14 +137,43 @@ export function CEOView() {
           </div>
         </div>
 
-        {/* Today's 3 Things - Interactive */}
+        {/* Today's Tasks - Interactive */}
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-gray-300 mb-2">Today's 3 Things</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-gray-300">Today's Tasks</p>
+            <button
+              onClick={() => setShowAddTask(!showAddTask)}
+              className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 transition-colors"
+            >
+              + Add
+            </button>
+          </div>
+
+          {/* Add task input */}
+          {showAddTask && (
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                placeholder="New task..."
+                className="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:border-indigo-500 focus:outline-none text-white placeholder-gray-500 text-sm"
+                autoFocus
+              />
+              <button
+                onClick={addTask}
+                className="px-3 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          )}
           {todos.map((item, i) => (
             <div
               key={item.id}
               onClick={() => toggleTodo(item.id)}
-              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all group ${
                 item.done 
                   ? 'bg-green-500/10 border border-green-500/30' 
                   : 'bg-gray-800/50 border border-gray-700 hover:border-gray-600'
@@ -140,6 +203,17 @@ export function CEOView() {
                   <p className="text-sm text-gray-500 mt-1">{item.details}</p>
                 )}
               </div>
+
+              {/* Delete button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteTask(item.id);
+                }}
+                className="text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>
