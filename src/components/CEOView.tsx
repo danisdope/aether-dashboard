@@ -111,6 +111,7 @@ export function CEOView() {
   };
 
   const completedCount = todos.filter(t => t.done).length;
+  const allDone = todos.length > 0 && completedCount === todos.length;
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -124,12 +125,21 @@ export function CEOView() {
       <TodayHighlight />
 
       {/* Hero - Today's Focus */}
-      <div className="rounded-2xl p-6 bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-pink-500/10 border border-indigo-500/20">
+      <div className={`rounded-2xl p-6 bg-gradient-to-br border transition-all ${
+        allDone 
+          ? 'from-green-500/20 via-emerald-500/10 to-teal-500/10 border-green-500/30' 
+          : 'from-indigo-500/20 via-purple-500/10 to-pink-500/10 border-indigo-500/20'
+      }`}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-sm text-indigo-300 font-medium">{dateStr}</p>
             <h2 className="text-2xl font-bold text-white mt-1">Manual Testing Day</h2>
-            <p className="text-gray-400 mt-1">Booking Agent Week • Day 1 of 5</p>
+            <p className="text-gray-400 mt-1">
+            {allDone 
+              ? '🎉 All tasks complete! Great work today!' 
+              : 'Booking Agent Week • Day 1 of 5'
+            }
+          </p>
           </div>
           <div className="text-right">
             <div className="text-4xl font-bold text-white">{completedCount}/{todos.length}</div>
