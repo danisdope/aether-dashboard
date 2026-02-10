@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AetherAvatar } from './AetherAvatar';
+import { ProgressRing } from './ProgressRing';
 
 export function TodayHighlight() {
   const [greeting, setGreeting] = useState('');
@@ -74,20 +75,32 @@ export function TodayHighlight() {
         </div>
       </div>
 
-      {/* Quick summary */}
-      <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-white/10">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-white">3</div>
-          <div className="text-xs text-gray-500">Tasks today</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-white">11</div>
-          <div className="text-xs text-gray-500">Tests to run</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-400">0</div>
-          <div className="text-xs text-gray-500">Blockers</div>
-        </div>
+      {/* Quick summary with progress ring */}
+      <div className="flex items-center justify-around mt-6 pt-4 border-t border-white/10">
+        <ProgressRing
+          progress={33}
+          size={80}
+          strokeWidth={6}
+          color="#6366f1"
+          label="1/3"
+          sublabel="Tasks"
+        />
+        <ProgressRing
+          progress={0}
+          size={80}
+          strokeWidth={6}
+          color="#22c55e"
+          label="0/11"
+          sublabel="Tests"
+        />
+        <ProgressRing
+          progress={15}
+          size={80}
+          strokeWidth={6}
+          color="#f59e0b"
+          label="15%"
+          sublabel="Week"
+        />
       </div>
     </div>
   );
