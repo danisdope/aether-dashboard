@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ExpandableCard } from './ExpandableCard';
 import { VisionGoals } from './VisionGoals';
 import { QuickNotes } from './QuickNotes';
+import { TodayHighlight } from './TodayHighlight';
 
 interface TodoItem {
   id: string;
@@ -85,6 +86,9 @@ export function CEOView() {
 
   return (
     <div className="space-y-6">
+      {/* Greeting & Summary */}
+      <TodayHighlight />
+
       {/* Hero - Today's Focus */}
       <div className="rounded-2xl p-6 bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-pink-500/10 border border-indigo-500/20">
         <div className="flex items-start justify-between mb-6">
