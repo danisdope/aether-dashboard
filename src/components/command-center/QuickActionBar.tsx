@@ -6,6 +6,12 @@ import { CC_COLORS, CC_FONTS } from "@/config/command-center";
 // Real links for each action
 const QUICK_ACTIONS = [
 	{ 
+		icon: "📚", 
+		label: "Vault", 
+		href: "obsidian://open?vault=Aetherion%20Vault",
+		description: "Open Aetherion Vault in Obsidian"
+	},
+	{ 
 		icon: "🧪", 
 		label: "Tests", 
 		href: "https://github.com/danisdope/aetherion-edu-os/actions",
