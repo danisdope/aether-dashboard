@@ -15,20 +15,27 @@ import {
 } from "@/components/command-center";
 import { CC_COLORS } from "@/config/command-center";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useGitHubData } from "@/hooks/useGitHubData";
 import { useTasks } from "@/hooks/useTasks";
 
 export default function CommandCenterPage() {
 	const [activeTab, setActiveTab] = useState("today");
 	const dashboardData = useDashboardData();
+	const githubData = useGitHubData();
 	const { tasks, toggleTask, addTask, deleteTask } = useTasks();
 
-	// Format commits for activity tab
-	const formattedCommits = dashboardData.recentCommits.map(c => ({
+	// Format commits for activity tab with full data
+	const formattedCommits = githubData.recentCommits.map(c => ({
 		hash: c.sha?.substring(0, 7) || "",
 		message: c.message || "",
+		author: c.author || "",
 		timeAgo: c.date ? getTimeAgo(new Date(c.date)) : "",
-		status: dashboardData.ciStatus,
+		status: githubData.workflow?.conclusion || "unknown",
+		url: c.url || "",
 	}));
+
+	// Merge GitHub data into dashboard data
+	const commit = githubData.commit || dashboardData.commit;
 
 	return (
 		<div
@@ -40,6 +47,17 @@ export default function CommandCenterPage() {
 			}}
 		>
 			<NoiseOverlay />
+
+			{/* CSS for animations */}
+			<style jsx global>{`
+				@keyframes pulse {
+					0%, 100% { opacity: 1; }
+					50% { opacity: 0.5; }
+				}
+				@keyframes spin {
+					to { transform: rotate(360deg); }
+				}
+			`}</style>
 
 			<div
 				style={{
@@ -54,7 +72,7 @@ export default function CommandCenterPage() {
 				<CommandCenterHeader 
 					testCount={dashboardData.testHealth.passing}
 					allPassing={dashboardData.allTestsPassing}
-					prodLive={dashboardData.ciStatus === 'success'}
+					prodLive={githubData.workflow?.conclusion === 'success'}
 					workDay={dashboardData.workWeek.label}
 				/>
 
@@ -70,7 +88,7 @@ export default function CommandCenterPage() {
 						<TodayTab
 							testHealth={dashboardData.testHealth}
 							workWeek={dashboardData.workWeek}
-							commit={dashboardData.commit}
+							commit={commit}
 							tasks={tasks}
 							onToggleTask={toggleTask}
 							onAddTask={addTask}
@@ -85,7 +103,7 @@ export default function CommandCenterPage() {
 					{activeTab === "tests" && (
 						<TestsTab 
 							testHealth={dashboardData.testHealth}
-							ciStatus={dashboardData.ciStatus}
+							ciStatus={githubData.workflow?.conclusion || dashboardData.ciStatus}
 						/>
 					)}
 

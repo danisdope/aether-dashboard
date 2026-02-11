@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Commit {
   sha: string;
@@ -19,10 +19,38 @@ interface WorkflowRun {
   html_url: string;
 }
 
+interface PullRequest {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  user: string;
+  created_at: string;
+  html_url: string;
+}
+
+interface Issue {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  labels: string[];
+  created_at: string;
+  html_url: string;
+}
+
+interface GitHubStats {
+  commits24h: number;
+  openPRs: number;
+  openIssues: number;
+  lastDeployTime: string | null;
+}
+
 interface GitHubData {
   commit: Commit | null;
   workflow: WorkflowRun | null;
   recentCommits: Commit[];
+  pullRequests: PullRequest[];
+  issues: Issue[];
+  stats: GitHubStats;
   timestamp: string;
 }
 
@@ -31,26 +59,26 @@ export function useGitHubData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/github');
-        if (!res.ok) throw new Error('Failed to fetch GitHub data');
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/github');
+      if (!res.ok) throw new Error('Failed to fetch GitHub data');
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  useEffect(() => {
     fetchData();
-    
     // Refresh every 30 seconds
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   // Derive commit status from workflow
   const commitStatus = data?.workflow?.conclusion === 'success' 
@@ -65,16 +93,29 @@ export function useGitHubData() {
     : '';
 
   return {
+    // Raw data
     commit: data?.commit ? {
       hash: data.commit.sha,
       message: data.commit.message,
+      author: data.commit.author,
+      date: data.commit.date,
+      url: data.commit.url,
       status: commitStatus,
       timeAgo,
     } : null,
     workflow: data?.workflow,
     recentCommits: data?.recentCommits || [],
+    pullRequests: data?.pullRequests || [],
+    issues: data?.issues || [],
+    stats: data?.stats || {
+      commits24h: 0,
+      openPRs: 0,
+      openIssues: 0,
+      lastDeployTime: null,
+    },
     loading,
     error,
+    refresh: fetchData,
   };
 }
 
