@@ -13,6 +13,13 @@ interface Task {
 	createdAt?: string;
 }
 
+interface DailyWin {
+	emoji: string;
+	title: string;
+	detail: string;
+	commits?: number;
+}
+
 interface TodayTabProps {
 	testHealth: {
 		total: number;
@@ -25,6 +32,8 @@ interface TodayTabProps {
 	onToggleTask: (id: string) => void;
 	onAddTask: (text: string) => void;
 	onDeleteTask: (id: string) => void;
+	dailyWins?: DailyWin[];
+	commitsToday?: number;
 }
 
 export function TodayTab({ 
@@ -35,6 +44,8 @@ export function TodayTab({
 	onToggleTask,
 	onAddTask,
 	onDeleteTask,
+	dailyWins,
+	commitsToday,
 }: TodayTabProps) {
 	const completedTasks = tasks.filter(t => t.done).length;
 	const [showAddTask, setShowAddTask] = useState(false);
@@ -187,6 +198,21 @@ export function TodayTab({
 					</div>
 				</div>
 			</ExpandableCard>
+
+			{/* Daily Wins */}
+			{dailyWins && dailyWins.length > 0 && (
+				<ExpandableCard
+					title="🏆 Daily Wins"
+					subtitle={`${commitsToday || 0} commits shipped today`}
+					defaultExpanded={true}
+				>
+					<div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+						{dailyWins.map((win, i) => (
+							<DailyWinItem key={i} win={win} />
+						))}
+					</div>
+				</ExpandableCard>
+			)}
 
 			{/* What's Happening */}
 			<ExpandableCard
@@ -438,6 +464,54 @@ function ExpandableTaskItem({ task, onToggle, onDelete }: {
 					</div>
 				</div>
 			)}
+		</div>
+	);
+}
+
+function DailyWinItem({ win }: { win: DailyWin }) {
+	return (
+		<div style={{
+			display: "flex",
+			alignItems: "flex-start",
+			gap: 12,
+			padding: "14px 16px",
+			borderRadius: 10,
+			background: `linear-gradient(135deg, ${CC_COLORS.purple}08, ${CC_COLORS.success}08)`,
+			border: `1px solid ${CC_COLORS.purple}20`,
+		}}>
+			<span style={{ fontSize: 24 }}>{win.emoji}</span>
+			<div style={{ flex: 1 }}>
+				<p style={{ 
+					fontSize: 15, 
+					color: CC_COLORS.textPrimary, 
+					fontWeight: 600,
+					fontFamily: CC_FONTS.dmSans,
+				}}>
+					{win.title}
+				</p>
+				<p style={{ 
+					fontSize: 13, 
+					color: CC_COLORS.textSecondary, 
+					marginTop: 4,
+					lineHeight: 1.4,
+				}}>
+					{win.detail}
+				</p>
+				{win.commits && (
+					<span style={{
+						display: "inline-block",
+						marginTop: 8,
+						fontSize: 11,
+						fontWeight: 600,
+						color: CC_COLORS.purple,
+						background: `${CC_COLORS.purple}15`,
+						padding: "4px 10px",
+						borderRadius: 12,
+					}}>
+						{win.commits} commits
+					</span>
+				)}
+			</div>
 		</div>
 	);
 }

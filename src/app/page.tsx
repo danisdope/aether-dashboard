@@ -37,6 +37,34 @@ export default function CommandCenterPage() {
 	// Merge GitHub data into dashboard data
 	const commit = githubData.commit || dashboardData.commit;
 
+	// Count today's commits
+	const today = new Date().toDateString();
+	const commitsToday = githubData.recentCommits.filter(c => 
+		c.date && new Date(c.date).toDateString() === today
+	).length;
+
+	// Daily wins based on today's work
+	const dailyWins = [
+		{
+			emoji: "🤖",
+			title: "Booking Agent Demo Ready",
+			detail: "FAQ in all stages, lock TTL hardened, parent name guard working. T1, T8, T9 all passing.",
+			commits: 10,
+		},
+		{
+			emoji: "📊",
+			title: "Teacher Dashboard Polished",
+			detail: "Report triage dashboard, grading flow fixes, demo generation working.",
+			commits: 6,
+		},
+		{
+			emoji: "✅",
+			title: "Test Suite Improvements",
+			detail: "isFAQPath test refactor, classifier tests updated.",
+			commits: 3,
+		},
+	];
+
 	return (
 		<div
 			style={{
@@ -93,6 +121,8 @@ export default function CommandCenterPage() {
 							onToggleTask={toggleTask}
 							onAddTask={addTask}
 							onDeleteTask={deleteTask}
+							dailyWins={dailyWins}
+							commitsToday={commitsToday}
 						/>
 					)}
 
