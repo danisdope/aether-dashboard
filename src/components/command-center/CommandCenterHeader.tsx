@@ -1,8 +1,22 @@
+'use client';
+
 import { CC_COLORS, CC_FONTS, CC_TYPOGRAPHY } from "@/config/command-center";
 import { OwlAvatar, OwlLogo } from "./OwlIcon";
 import { StatusDot } from "./StatusDot";
 
-export function CommandCenterHeader() {
+interface HeaderProps {
+	testCount?: number;
+	allPassing?: boolean;
+	prodLive?: boolean;
+	workDay?: string;
+}
+
+export function CommandCenterHeader({ 
+	testCount = 469, 
+	allPassing = true,
+	prodLive = true,
+	workDay = "Day 1/5"
+}: HeaderProps) {
 	return (
 		<div
 			style={{
@@ -38,9 +52,18 @@ export function CommandCenterHeader() {
 
 			<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
 				<div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-					<StatusDot color={CC_COLORS.success} label="469 tests" />
-					<StatusDot color={CC_COLORS.info} label="Prod live" />
-					<StatusDot color={CC_COLORS.warning} label="Day 1/5" />
+					<StatusDot 
+						color={allPassing ? CC_COLORS.success : CC_COLORS.warning} 
+						label={`${testCount} tests`} 
+					/>
+					<StatusDot 
+						color={prodLive ? CC_COLORS.info : CC_COLORS.danger} 
+						label={prodLive ? "Prod live" : "Prod down"} 
+					/>
+					<StatusDot 
+						color={CC_COLORS.warning} 
+						label={workDay} 
+					/>
 				</div>
 				<div
 					style={{

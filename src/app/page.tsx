@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import {
 	AetherChatInput,
 	CommandCenterHeader,
@@ -8,33 +9,31 @@ import {
 	NoiseOverlay,
 	QuickActionBar,
 	TabNavigation,
-	TaskList,
 	TestHealthCard,
 } from "@/components/command-center";
 import {
 	CC_COLORS,
-	CC_MOCK_TEST_HEALTH,
 	CC_QUICK_ACTIONS,
 } from "@/config/command-center";
-import { useGitHubData } from "@/hooks/useGitHubData";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTasks } from "@/hooks/useTasks";
 
 export default function CommandCenterPage() {
-	const { commit, workflow, loading: githubLoading } = useGitHubData();
+	const dashboardData = useDashboardData();
 	const { tasks, completedCount, totalCount, toggleTask, addTask, deleteTask } = useTasks();
 
 	// Dynamic metrics based on real data
 	const metrics = [
 		{
-			value: CC_MOCK_TEST_HEALTH.passing.toString(),
+			value: dashboardData.testHealth.passing.toString(),
 			label: "Tests Passing",
-			sublabel: `100% · all green`,
-			color: CC_COLORS.success,
+			sublabel: dashboardData.allTestsPassing ? "100% · all green" : `${Math.round((dashboardData.testHealth.passing / dashboardData.testHealth.total) * 100)}%`,
+			color: dashboardData.allTestsPassing ? CC_COLORS.success : CC_COLORS.warning,
 		},
 		{
-			value: "30",
+			value: dashboardData.promptfoo.count.toString(),
 			label: "Promptfoo",
-			sublabel: "baseline",
+			sublabel: dashboardData.promptfoo.status,
 			color: CC_COLORS.textSecondary,
 		},
 		{
@@ -44,23 +43,16 @@ export default function CommandCenterPage() {
 			color: completedCount === totalCount ? CC_COLORS.success : CC_COLORS.warning,
 		},
 		{
-			value: workflow?.conclusion === 'success' ? '✓' : workflow?.conclusion === 'failure' ? '✗' : '•',
+			value: dashboardData.ciStatus === 'success' ? '✓' : dashboardData.ciStatus === 'failure' ? '✗' : '•',
 			label: "CI Status",
-			sublabel: workflow?.conclusion || 'checking...',
-			color: workflow?.conclusion === 'success' 
+			sublabel: dashboardData.ciStatus,
+			color: dashboardData.ciStatus === 'success' 
 				? CC_COLORS.success 
-				: workflow?.conclusion === 'failure'
+				: dashboardData.ciStatus === 'failure'
 				? CC_COLORS.danger
 				: CC_COLORS.textSecondary,
 		},
 	];
-
-	// Convert tasks to TaskList format
-	const taskListItems = tasks.map(t => ({
-		done: t.done,
-		text: t.text,
-		tag: t.tag,
-	}));
 
 	return (
 		<div
@@ -82,7 +74,12 @@ export default function CommandCenterPage() {
 					padding: "0 32px",
 				}}
 			>
-				<CommandCenterHeader />
+				<CommandCenterHeader 
+					testCount={dashboardData.testHealth.passing}
+					allPassing={dashboardData.allTestsPassing}
+					prodLive={dashboardData.ciStatus === 'success'}
+					workDay={dashboardData.workWeek.label}
+				/>
 				<TabNavigation />
 
 				{/* Metrics row */}
@@ -100,12 +97,12 @@ export default function CommandCenterPage() {
 				</div>
 
 				{/* Latest commit - real data */}
-				{commit && !githubLoading ? (
+				{dashboardData.commit && !dashboardData.loading ? (
 					<LatestCommitCard
-						hash={commit.hash}
-						status={commit.status as 'passed' | 'failed' | 'skipped'}
-						message={commit.message}
-						timeAgo={commit.timeAgo}
+						hash={dashboardData.commit.hash}
+						status={dashboardData.commit.status as 'passed' | 'failed' | 'skipped'}
+						message={dashboardData.commit.message}
+						timeAgo={dashboardData.commit.timeAgo}
 					/>
 				) : (
 					<div style={{ padding: "16px 0", color: CC_COLORS.textMuted }}>
@@ -126,7 +123,12 @@ export default function CommandCenterPage() {
 					totalCount={totalCount}
 				/>
 
-				<TestHealthCard {...CC_MOCK_TEST_HEALTH} />
+				{/* Test Health with real data */}
+				<TestHealthCard 
+					total={dashboardData.testHealth.total}
+					passing={dashboardData.testHealth.passing}
+					suites={dashboardData.testHealth.suites}
+				/>
 
 				{/* Bottom spacer */}
 				<div style={{ height: 48 }} />
@@ -254,101 +256,104 @@ function TaskListInteractive({
 					overflow: 'hidden',
 				}}
 			>
-				{tasks.map((task, i) => (
-					<div
-						key={task.id}
-						onClick={() => onToggle(task.id)}
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: 12,
-							padding: '14px 16px',
-							borderBottom: i < tasks.length - 1 ? `1px solid ${CC_COLORS.border}` : 'none',
-							cursor: 'pointer',
-							transition: 'background 0.15s',
-						}}
-						onMouseEnter={(e) => e.currentTarget.style.background = CC_COLORS.elevated}
-						onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-					>
-						{/* Checkbox */}
+				{tasks.length === 0 ? (
+					<div style={{ padding: 16, textAlign: 'center', color: CC_COLORS.textMuted }}>
+						No tasks yet. Add one above!
+					</div>
+				) : (
+					tasks.map((task, i) => (
 						<div
+							key={task.id}
+							onClick={() => onToggle(task.id)}
 							style={{
-								width: 20,
-								height: 20,
-								borderRadius: 6,
-								border: `2px solid ${task.done ? CC_COLORS.success : CC_COLORS.textMuted}`,
-								background: task.done ? CC_COLORS.success : 'transparent',
 								display: 'flex',
 								alignItems: 'center',
-								justifyContent: 'center',
-								flexShrink: 0,
+								gap: 12,
+								padding: '14px 16px',
+								borderBottom: i < tasks.length - 1 ? `1px solid ${CC_COLORS.border}` : 'none',
+								cursor: 'pointer',
+								transition: 'background 0.15s',
 							}}
+							onMouseEnter={(e) => e.currentTarget.style.background = CC_COLORS.elevated}
+							onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
 						>
-							{task.done && (
-								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-									<path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-								</svg>
-							)}
-						</div>
-
-						{/* Text */}
-						<span
-							style={{
-								flex: 1,
-								fontFamily: "var(--font-dm-sans), sans-serif",
-								fontSize: 14,
-								color: task.done ? CC_COLORS.textMuted : CC_COLORS.textPrimary,
-								textDecoration: task.done ? 'line-through' : 'none',
-							}}
-						>
-							{task.text}
-						</span>
-
-						{/* Tag */}
-						{task.tag && (
-							<span
+							{/* Checkbox */}
+							<div
 								style={{
-									fontFamily: "var(--font-dm-sans), sans-serif",
-									fontSize: 10,
-									fontWeight: 600,
-									textTransform: 'uppercase',
-									letterSpacing: '0.05em',
-									color: CC_COLORS.textMuted,
-									background: CC_COLORS.elevated,
-									padding: '4px 8px',
-									borderRadius: 4,
+									width: 20,
+									height: 20,
+									borderRadius: 6,
+									border: `2px solid ${task.done ? CC_COLORS.success : CC_COLORS.textMuted}`,
+									background: task.done ? CC_COLORS.success : 'transparent',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									flexShrink: 0,
 								}}
 							>
-								{task.tag}
-							</span>
-						)}
+								{task.done && (
+									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+										<path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+									</svg>
+								)}
+							</div>
 
-						{/* Delete */}
-						<button
-							onClick={(e) => {
-								e.stopPropagation();
-								onDelete(task.id);
-							}}
-							style={{
-								background: 'transparent',
-								border: 'none',
-								color: CC_COLORS.textMuted,
-								cursor: 'pointer',
-								padding: 4,
-								opacity: 0.5,
-								transition: 'opacity 0.15s',
-							}}
-							onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-							onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
-						>
-							✕
-						</button>
-					</div>
-				))}
+							{/* Text */}
+							<span
+								style={{
+									flex: 1,
+									fontFamily: "var(--font-dm-sans), sans-serif",
+									fontSize: 14,
+									color: task.done ? CC_COLORS.textMuted : CC_COLORS.textPrimary,
+									textDecoration: task.done ? 'line-through' : 'none',
+								}}
+							>
+								{task.text}
+							</span>
+
+							{/* Tag */}
+							{task.tag && (
+								<span
+									style={{
+										fontFamily: "var(--font-dm-sans), sans-serif",
+										fontSize: 10,
+										fontWeight: 600,
+										textTransform: 'uppercase',
+										letterSpacing: '0.05em',
+										color: CC_COLORS.textMuted,
+										background: CC_COLORS.elevated,
+										padding: '4px 8px',
+										borderRadius: 4,
+									}}
+								>
+									{task.tag}
+								</span>
+							)}
+
+							{/* Delete */}
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									onDelete(task.id);
+								}}
+								style={{
+									background: 'transparent',
+									border: 'none',
+									color: CC_COLORS.textMuted,
+									cursor: 'pointer',
+									padding: 4,
+									opacity: 0.5,
+									transition: 'opacity 0.15s',
+								}}
+								onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+								onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
+							>
+								✕
+							</button>
+						</div>
+					))
+				)}
 			</div>
 		</div>
 	);
 }
-
-// Need useState for the interactive component
-import { useState } from 'react';
