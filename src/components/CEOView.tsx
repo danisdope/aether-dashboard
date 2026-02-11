@@ -5,6 +5,7 @@ import { ExpandableCard } from './ExpandableCard';
 import { VisionGoals } from './VisionGoals';
 import { QuickNotes } from './QuickNotes';
 import { TodayHighlight } from './TodayHighlight';
+import { TestHealthChart } from './TestHealthChart';
 
 interface TodoItem {
   id: string;
@@ -228,6 +229,9 @@ export function CEOView() {
           ))}
         </div>
       </div>
+
+      {/* Test Health Chart */}
+      <TestHealthChart />
 
       {/* Workstreams - Expandable Cards */}
       <div className="space-y-3">
