@@ -4,6 +4,15 @@ import { useState } from "react";
 import { CC_COLORS, CC_FONTS } from "@/config/command-center";
 import { ExpandableCard } from "../ExpandableCard";
 
+interface Task {
+	id: string;
+	text: string;
+	done: boolean;
+	tag?: string;
+	details?: string;
+	createdAt?: string;
+}
+
 interface TodayTabProps {
 	testHealth: {
 		total: number;
@@ -12,7 +21,7 @@ interface TodayTabProps {
 	};
 	workWeek: { day: number; total: number; label: string };
 	commit: { hash: string; message: string; status: string; timeAgo: string } | null;
-	tasks: Array<{ id: string; text: string; done: boolean; tag?: string }>;
+	tasks: Task[];
 	onToggleTask: (id: string) => void;
 	onAddTask: (text: string) => void;
 	onDeleteTask: (id: string) => void;
@@ -167,7 +176,7 @@ export function TodayTab({
 							</p>
 						) : (
 							tasks.map((task) => (
-								<TaskItem
+								<ExpandableTaskItem
 									key={task.id}
 									task={task}
 									onToggle={() => onToggleTask(task.id)}
@@ -250,78 +259,185 @@ function SummaryCard({ label, value, detail, color }: {
 	);
 }
 
-function TaskItem({ task, onToggle, onDelete }: { 
-	task: { id: string; text: string; done: boolean; tag?: string };
+function ExpandableTaskItem({ task, onToggle, onDelete }: { 
+	task: Task;
 	onToggle: () => void;
 	onDelete: () => void;
 }) {
+	const [expanded, setExpanded] = useState(false);
+
 	return (
 		<div
-			onClick={onToggle}
 			style={{
-				display: "flex",
-				alignItems: "center",
-				gap: 12,
-				padding: "12px 14px",
 				borderRadius: 8,
 				background: task.done ? `${CC_COLORS.success}10` : CC_COLORS.elevated,
 				border: `1px solid ${task.done ? CC_COLORS.success + "30" : CC_COLORS.border}`,
-				cursor: "pointer",
-				transition: "all 0.2s",
+				overflow: "hidden",
 			}}
 		>
-			<div style={{
-				width: 20,
-				height: 20,
-				borderRadius: 6,
-				border: `2px solid ${task.done ? CC_COLORS.success : CC_COLORS.textMuted}`,
-				background: task.done ? CC_COLORS.success : "transparent",
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				flexShrink: 0,
-			}}>
-				{task.done && (
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-						<path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-					</svg>
-				)}
-			</div>
-			<span style={{
-				flex: 1,
-				fontSize: 14,
-				color: task.done ? CC_COLORS.textMuted : CC_COLORS.textPrimary,
-				textDecoration: task.done ? "line-through" : "none",
-				fontFamily: CC_FONTS.dmSans,
-			}}>
-				{task.text}
-			</span>
-			{task.tag && (
-				<span style={{
-					fontSize: 10,
-					fontWeight: 600,
-					textTransform: "uppercase",
-					color: CC_COLORS.textMuted,
-					background: CC_COLORS.surface,
-					padding: "4px 8px",
-					borderRadius: 4,
-				}}>
-					{task.tag}
-				</span>
-			)}
-			<button
-				onClick={(e) => { e.stopPropagation(); onDelete(); }}
+			{/* Main row */}
+			<div
 				style={{
-					background: "transparent",
-					border: "none",
-					color: CC_COLORS.textMuted,
-					cursor: "pointer",
-					padding: 4,
-					opacity: 0.5,
+					display: "flex",
+					alignItems: "center",
+					gap: 12,
+					padding: "12px 14px",
 				}}
 			>
-				✕
-			</button>
+				{/* Checkbox */}
+				<div
+					onClick={(e) => { e.stopPropagation(); onToggle(); }}
+					style={{
+						width: 20,
+						height: 20,
+						borderRadius: 6,
+						border: `2px solid ${task.done ? CC_COLORS.success : CC_COLORS.textMuted}`,
+						background: task.done ? CC_COLORS.success : "transparent",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						flexShrink: 0,
+						cursor: "pointer",
+					}}
+				>
+					{task.done && (
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+							<path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+						</svg>
+					)}
+				</div>
+
+				{/* Text - clicking expands */}
+				<span 
+					onClick={() => setExpanded(!expanded)}
+					style={{
+						flex: 1,
+						fontSize: 14,
+						color: task.done ? CC_COLORS.textMuted : CC_COLORS.textPrimary,
+						textDecoration: task.done ? "line-through" : "none",
+						fontFamily: CC_FONTS.dmSans,
+						cursor: "pointer",
+					}}
+				>
+					{task.text}
+				</span>
+
+				{/* Tag */}
+				{task.tag && (
+					<span style={{
+						fontSize: 10,
+						fontWeight: 600,
+						textTransform: "uppercase",
+						color: CC_COLORS.purple,
+						background: `${CC_COLORS.purple}15`,
+						padding: "4px 8px",
+						borderRadius: 4,
+					}}>
+						{task.tag}
+					</span>
+				)}
+
+				{/* Expand button */}
+				<button
+					onClick={() => setExpanded(!expanded)}
+					style={{
+						background: "transparent",
+						border: "none",
+						color: CC_COLORS.textMuted,
+						cursor: "pointer",
+						padding: 4,
+						fontSize: 10,
+						transition: "transform 0.2s",
+						transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+					}}
+				>
+					▼
+				</button>
+
+				{/* Delete */}
+				<button
+					onClick={(e) => { e.stopPropagation(); onDelete(); }}
+					style={{
+						background: "transparent",
+						border: "none",
+						color: CC_COLORS.textMuted,
+						cursor: "pointer",
+						padding: 4,
+						opacity: 0.5,
+					}}
+				>
+					✕
+				</button>
+			</div>
+
+			{/* Expanded details */}
+			{expanded && (
+				<div style={{
+					padding: "12px 14px",
+					borderTop: `1px solid ${CC_COLORS.border}`,
+					background: CC_COLORS.surface,
+				}}>
+					<div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+						{/* Context/Details */}
+						{task.details ? (
+							<p style={{ fontSize: 13, color: CC_COLORS.textSecondary, lineHeight: 1.5 }}>
+								{task.details}
+							</p>
+						) : (
+							<p style={{ fontSize: 13, color: CC_COLORS.textMuted, fontStyle: "italic" }}>
+								No additional details. Edit to add context.
+							</p>
+						)}
+
+						{/* Meta info */}
+						<div style={{ 
+							display: "flex", 
+							gap: 16, 
+							fontSize: 11, 
+							color: CC_COLORS.textMuted,
+							flexWrap: "wrap",
+						}}>
+							{task.createdAt && (
+								<span>📅 Created: {new Date(task.createdAt).toLocaleDateString()}</span>
+							)}
+							<span>📌 Status: {task.done ? "Completed ✓" : "Pending"}</span>
+							{task.tag && <span>🏷️ Tag: {task.tag}</span>}
+						</div>
+
+						{/* Action buttons */}
+						<div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+							<button
+								onClick={onToggle}
+								style={{
+									padding: "6px 12px",
+									borderRadius: 6,
+									border: `1px solid ${CC_COLORS.border}`,
+									background: "transparent",
+									color: CC_COLORS.textSecondary,
+									fontSize: 12,
+									cursor: "pointer",
+								}}
+							>
+								{task.done ? "↩️ Mark pending" : "✓ Mark done"}
+							</button>
+							<button
+								onClick={onDelete}
+								style={{
+									padding: "6px 12px",
+									borderRadius: 6,
+									border: `1px solid ${CC_COLORS.danger}30`,
+									background: "transparent",
+									color: CC_COLORS.danger,
+									fontSize: 12,
+									cursor: "pointer",
+								}}
+							>
+								🗑️ Delete
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
